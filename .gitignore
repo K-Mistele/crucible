@@ -1,0 +1,15 @@
+
+# Riptide artifacts (cloud-synced)
+.humanlayer/tasks/
+
+# Dependencies and generated output
+node_modules/
+dist/
+.vite/
+.alchemy/
+.env
+.env.*
+!.env.example
+
+# Riptide artifacts (cloud-synced)
+.humanlayer/tasks/

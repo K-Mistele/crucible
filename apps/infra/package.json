@@ -1,0 +1,16 @@
+{
+  "name": "@minecraft-cloud/infra",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "alchemy deploy src/alchemy.run.ts",
+    "destroy": "alchemy destroy src/alchemy.run.ts",
+    "plan": "alchemy plan src/alchemy.run.ts"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "rc",
+    "@effect/platform-node": "rc",
+    "alchemy": "latest",
+    "effect": "rc"
+  }
+}

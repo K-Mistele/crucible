@@ -1,0 +1,32 @@
+{
+  "name": "minecraft-cloud",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "vp -C apps/control-center build",
+    "check": "vp check",
+    "dev": "vp -C apps/control-center dev",
+    "format": "vp fmt",
+    "infra:deploy": "bun --cwd apps/infra alchemy deploy src/alchemy.run.ts",
+    "infra:destroy": "bun --cwd apps/infra alchemy destroy src/alchemy.run.ts",
+    "infra:login": "bun --cwd apps/infra alchemy login --configure",
+    "infra:plan": "bun --cwd apps/infra alchemy plan src/alchemy.run.ts",
+    "infra:prod:deploy": "bun --cwd apps/infra alchemy deploy src/alchemy.run.ts --stage prod",
+    "infra:prod:destroy": "bun --cwd apps/infra alchemy destroy src/alchemy.run.ts --stage prod",
+    "infra:prod:plan": "bun --cwd apps/infra alchemy plan src/alchemy.run.ts --stage prod",
+    "lint": "vp lint",
+    "test": "vp test"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
+    "vite-plus": "0.2.9"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9"
+  },
+  "packageManager": "bun@1.3.14"
+}
