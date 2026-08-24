@@ -11,6 +11,7 @@ export interface MinecraftSettings {
   onlineMode: boolean;
   ops: string[];
   pvp: boolean;
+  seed?: string;
   simulationDistance: number;
   version: string;
   viewDistance: number;
@@ -28,6 +29,7 @@ export const minecraftSettings: MinecraftSettings = {
   onlineMode: true,
   ops: [],
   pvp: true,
+  seed: '-4995054936707021313',
   simulationDistance: 8,
   version: '26.2',
   viewDistance: 10,

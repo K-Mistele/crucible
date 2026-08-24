@@ -36,6 +36,7 @@ export const createMinecraftUserData = ({
     `MINECRAFT_OPS=${quote(settings.ops.join(','))}`,
     `MINECRAFT_WHITELIST=${quote(settings.whitelist.join(','))}`,
     `MINECRAFT_BACKUP_BUCKET=${quote(backupBucketName)}`,
+    ...(settings.seed !== undefined ? [`MINECRAFT_SEED=${quote(settings.seed)}`] : []),
   ].join('\n');
 
   return [
@@ -119,6 +120,7 @@ export const createMinecraftUserData = ({
     '  -e ENFORCE_WHITELIST="${MINECRAFT_ENFORCE_WHITELIST}" \\',
     '  -e OPS="${MINECRAFT_OPS}" \\',
     '  -e WHITELIST="${MINECRAFT_WHITELIST}" \\',
+    '  ${MINECRAFT_SEED:+-e SEED="${MINECRAFT_SEED}"} \\',
     '  -e ENABLE_RCON=TRUE \\',
     '  -e RCON_PASSWORD="${MINECRAFT_RCON_PASSWORD}" \\',
     '  -v /srv/minecraft:/data \\',

@@ -127,12 +127,17 @@ export default Alchemy.Stack(
       volumeType: 'gp3',
     });
 
+    const eip = yield* AWS.EC2.EIP('MinecraftEip', {
+      domain: 'vpc',
+      tags: { Purpose: 'minecraft-server' },
+    });
+
     const server = yield* AWS.EC2.Instance('MinecraftServer', {
       associatePublicIpAddress: true,
       availabilityZone,
       imageId: AWS.EC2.amazonLinux2023({ architecture: 'arm64' }),
       instanceProfileName: `minecraft-server-profile-${environment.accountId}`,
-      instanceType: 't4g.medium',
+      instanceType: 'm7g.xlarge',
       securityGroupIds: [minecraftSecurityGroup.groupId],
       subnetId: publicSubnetId,
       tags: {
@@ -154,17 +159,14 @@ export default Alchemy.Stack(
 
     return {
       backupBucket: backupBucket.bucketName,
-      connect: server.publicIpAddress.pipe(
-        Output.map((ipAddress) => (ipAddress ? `${ipAddress}:25565` : undefined)),
-      ),
+      connect: eip.publicIp.pipe(Output.map((ipAddress) => `${ipAddress}:25565`)),
+      eipAllocationId: eip.allocationId,
       instanceId: server.instanceId,
       ssmCommand: server.instanceId.pipe(
         Output.map((instanceId) => `aws ssm start-session --target ${instanceId}`),
       ),
       stage,
-      url: server.publicDnsName.pipe(
-        Output.map((hostname) => (hostname ? `minecraft://${hostname}:25565` : undefined)),
-      ),
+      url: eip.publicIp.pipe(Output.map((ipAddress) => `minecraft://${ipAddress}:25565`)),
       worldVolumeId: worldVolume.volumeId,
     };
   }),
