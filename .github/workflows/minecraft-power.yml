@@ -1,0 +1,128 @@
+name: Minecraft Server Power Toggle
+
+on:
+  workflow_dispatch:
+    inputs:
+      desired_state:
+        description: Desired server power state
+        required: true
+        type: choice
+        options:
+          - "on"
+          - "off"
+
+concurrency:
+  group: minecraft-server-power
+  cancel-in-progress: false
+
+jobs:
+  toggle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Resolve instance ID
+        id: resolve
+        run: |
+          set -euo pipefail
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Purpose,Values=minecraft-server" \
+                      "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+            --query "Reservations[0].Instances[0].InstanceId" --output text)
+          if [[ -z "$INSTANCE_ID" || "$INSTANCE_ID" == "None" ]]; then
+            echo "No minecraft-server instance found." >&2
+            exit 1
+          fi
+          echo "Resolved instance: $INSTANCE_ID"
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Flush world before stopping
+        if: inputs.desired_state == 'off'
+        continue-on-error: true
+        env:
+          INSTANCE_ID: ${{ steps.resolve.outputs.instance_id }}
+        run: |
+          set -uo pipefail
+          STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+            --query "Reservations[0].Instances[0].State.Name" --output text)
+          if [[ "$STATE" != "running" ]]; then
+            echo "Instance not running (state: $STATE); skipping flush."
+            exit 0
+          fi
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["docker exec minecraft rcon-cli save-all flush || true"]' \
+            --query "Command.CommandId" --output text)
+
+          STATUS="Pending"
+          for _ in $(seq 1 12); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+              --query "Status" --output text 2>/dev/null || echo "Pending")
+            if [[ "$STATUS" =~ ^(Success|Failed|Cancelled|TimedOut)$ ]]; then
+              break
+            fi
+            sleep 5
+          done
+          echo "World flush command finished with status: $STATUS"
+
+      # This is the step that actually changes instance power state. Every
+      # branch first checks the live state so re-running with the same
+      # desired_state is always a no-op — safe to retry or double-click.
+      - name: Apply desired power state
+        env:
+          INSTANCE_ID: ${{ steps.resolve.outputs.instance_id }}
+          DESIRED_STATE: ${{ inputs.desired_state }}
+        run: |
+          set -euo pipefail
+          STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+            --query "Reservations[0].Instances[0].State.Name" --output text)
+          echo "Current state: $STATE / Desired: $DESIRED_STATE"
+
+          if [[ "$DESIRED_STATE" == "on" ]]; then
+            case "$STATE" in
+              running)
+                echo "Already running." ;;
+              stopped)
+                aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+                aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+                echo "Started." ;;
+              pending)
+                aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+                echo "Was already starting; now running." ;;
+              *)
+                echo "Instance in state '$STATE'; cannot start from here." >&2
+                exit 1 ;;
+            esac
+          else
+            case "$STATE" in
+              stopped)
+                echo "Already stopped." ;;
+              running)
+                aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+                aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+                echo "Stopped." ;;
+              stopping)
+                aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+                echo "Was already stopping; now stopped." ;;
+              *)
+                echo "Instance in state '$STATE'; cannot stop from here." >&2
+                exit 1 ;;
+            esac
+          fi
+
+      - name: Report final state
+        if: always()
+        env:
+          INSTANCE_ID: ${{ steps.resolve.outputs.instance_id }}
+        run: |
+          aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+            --query "Reservations[0].Instances[0].{State:State.Name,PublicIp:PublicIpAddress}" \
+            --output table
