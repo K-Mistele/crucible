@@ -33,7 +33,7 @@ export const minecraftSettings: MinecraftSettings = {
   simulationDistance: 8,
   version: '26.2',
   viewDistance: 10,
-  whitelist: ['ChameleonOKarma', 'DEMON8672', 'Galactic_Gecko', 'TardBot', 'tunestay', 'TurboDos'],
+  whitelist: ['ChameleonBot', 'ChameleonOKarma', 'DEMON8672', 'Galactic_Gecko', 'tunestay', 'TurboDos'],
   whitelistEnabled: true,
 };
 

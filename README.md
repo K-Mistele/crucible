@@ -111,7 +111,7 @@ Important defaults:
   release when this configuration was updated. Every player should select Java
   Edition `26.2` in the launcher before joining.
 - `onlineMode` disabled so the offline-auth bot can connect; the whitelist is
-  enabled for the known players and `TardBot`. No RCON port is exposed publicly.
+  enabled for the known players and `ChameleonBot`. No RCON port is exposed publicly.
 - TCP `25565` is the only allowed inbound port; Java Edition does not need UDP.
 - Daily backups at 04:17 UTC; adjust the systemd timer in
   `apps/infra/src/user-data.ts` if needed.
