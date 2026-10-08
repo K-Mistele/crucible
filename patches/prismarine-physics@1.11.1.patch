@@ -1,0 +1,124 @@
+diff --git a/node_modules/prismarine-physics/.bun-tag-dc30246bc752da4 b/.bun-tag-dc30246bc752da4
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/index.js b/index.js
+index d95ce7f4713f463a888d2c836a843b34f5fc94d7..bcad52c5e40633cec3e14f4fbdafd34b3ede6bb4 100644
+--- a/index.js
++++ b/index.js
+@@ -73,8 +73,11 @@ function Physics (mcData, world) {
+     honeyblockJumpSpeed: 0.4,
+     ladderMaxSpeed: 0.15,
+     ladderClimbSpeed: 0.2,
+-    playerHalfWidth: 0.3,
+-    playerHeight: 1.8,
++    // Vanilla stores player dimensions as floats (0.6F x 1.8F) and builds the box from them. Using
++    // the same values keeps the client's box identical to the server's, which matters because
++    // servers reject moves whose box overlaps a full block by any amount (AABB.intersects).
++    playerHalfWidth: Math.fround(0.6) / 2,
++    playerHeight: Math.fround(1.8),
+     waterInertia: 0.8,
+     lavaInertia: 0.5,
+     liquidAcceleration: 0.02,
+@@ -115,12 +118,6 @@ function Physics (mcData, world) {
+     return new AABB(-w, 0, -w, w, physics.playerHeight, w).offset(pos.x, pos.y, pos.z)
+   }
+ 
+-  function setPositionToBB (bb, pos) {
+-    pos.x = bb.minX + physics.playerHalfWidth
+-    pos.y = bb.minY
+-    pos.z = bb.minZ + physics.playerHalfWidth
+-  }
+-
+   function getSurroundingBBs (world, queryBB) {
+     const surroundingBBs = []
+     const cursor = new Vec3(0, 0, 0)
+@@ -203,6 +200,11 @@ function Physics (mcData, world) {
+     }
+ 
+     let playerBB = getPlayerBB(pos)
++    // Total movement actually applied, so the position can be updated like vanilla (pos += move)
++    // instead of being rebuilt from the box, which can differ in the last bit.
++    let moveX
++    let moveY
++    let moveZ
+     const queryBB = playerBB.clone().extend(dx, dy, dz)
+     const surroundingBBs = getSurroundingBBs(world, queryBB)
+     const oldBB = playerBB.clone()
+@@ -221,6 +223,9 @@ function Physics (mcData, world) {
+       dz = blockBB.computeOffsetZ(playerBB, dz)
+     }
+     playerBB.offset(0, 0, dz)
++    moveX = dx
++    moveY = dy
++    moveZ = dz
+ 
+     // Step on block if height < stepHeight
+     if (physics.stepHeight > 0 &&
+@@ -269,15 +274,18 @@ function Physics (mcData, world) {
+       const norm1 = dx1 * dx1 + dz1 * dz1
+       const norm2 = dx2 * dx2 + dz2 * dz2
+ 
++      let stepUp
+       if (norm1 > norm2) {
+         dx = dx1
+         dy = -dy1
+         dz = dz1
++        stepUp = dy1
+         playerBB = BB1
+       } else {
+         dx = dx2
+         dy = -dy2
+         dz = dz2
++        stepUp = dy2
+         playerBB = BB2
+       }
+ 
+@@ -285,17 +293,25 @@ function Physics (mcData, world) {
+         dy = blockBB.computeOffsetY(playerBB, dy)
+       }
+       playerBB.offset(0, dy, 0)
++      moveX = dx
++      moveY = stepUp + dy
++      moveZ = dz
+ 
+       if (oldVelXCol * oldVelXCol + oldVelZCol * oldVelZCol >= dx * dx + dz * dz) {
+         dx = oldVelXCol
+         dy = oldVelYCol
+         dz = oldVelZCol
++        moveX = dx
++        moveY = dy
++        moveZ = dz
+         playerBB = oldBBCol
+       }
+     }
+ 
+     // Update flags
+-    setPositionToBB(playerBB, pos)
++    pos.x += moveX
++    pos.y += moveY
++    pos.z += moveZ
+     entity.isCollidedHorizontally = dx !== oldVelX || dz !== oldVelZ
+     entity.isCollidedVertically = dy !== oldVelY
+     entity.onGround = entity.isCollidedVertically && oldVelY < 0
+diff --git a/lib/features.json b/lib/features.json
+index 647ea481d2521ef1f4b19c18a1e9af4857272a5a..8003be58c738bef42c42fa11fc0d335f29c4b873 100644
+--- a/lib/features.json
++++ b/lib/features.json
+@@ -7,7 +7,7 @@
+   {
+     "name": "proportionalLiquidGravity",
+     "description": "Liquid gravity is a proportion of normal gravity",
+-    "versions": ["1.13", "1.14", "1.15", "1.16", "1.17", "1.18", "1.19", "1.20", "1.21", "26.1"]
++    "versions": ["1.13", "1.14", "1.15", "1.16", "1.17", "1.18", "1.19", "1.20", "1.21", "26.1", "26.2"]
+   },
+   {
+     "name": "velocityBlocksOnCollision",
+@@ -22,7 +22,7 @@
+   {
+     "name": "climbUsingJump",
+     "description": "Entity can climb ladders and vines by pressing jump",
+-    "versions": ["1.14", "1.15", "1.16", "1.17", "1.18", "1.19", "1.20", "1.21", "26.1"]
++    "versions": ["1.14", "1.15", "1.16", "1.17", "1.18", "1.19", "1.20", "1.21", "26.1", "26.2"]
+   },
+   {
+     "name": "climbableTrapdoor",

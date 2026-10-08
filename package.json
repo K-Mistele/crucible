@@ -2,11 +2,15 @@
   "name": "minecraft-cloud",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "vendor/*"
   ],
   "type": "module",
   "scripts": {
     "build": "vp -C apps/control-center build",
+    "bot:test": "bun --cwd apps/minecraft-bot test && bun --cwd apps/pi-extension test",
+    "bot:typecheck": "bun --cwd apps/minecraft-bot typecheck && bun --cwd apps/pi-extension typecheck",
+    "bot:viewer": "bun --cwd apps/minecraft-bot viewer:build",
     "check": "vp check",
     "dev": "vp -C apps/control-center dev",
     "format": "vp fmt",
@@ -19,8 +23,8 @@
     "infra:prod:plan": "bun --cwd apps/infra alchemy plan src/alchemy.run.ts --stage prod",
     "lint": "vp lint",
     "migrate-uuids": "python3 scripts/migrate-uuids.py",
-    "test": "vp test",
-    "test:migrate-uuids": "bun test scripts/migrate-uuids.test.ts"
+    "test:migrate-uuids": "bun test scripts/migrate-uuids.test.ts",
+    "test": "vp test"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -29,7 +33,15 @@
     "vite-plus": "0.2.9"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
+    "minecraft-data": "workspace:*",
+    "mineflayer-pathfinder": "github:PrismarineJS/mineflayer-pathfinder#d773d15"
   },
-  "packageManager": "bun@1.3.14"
+  "packageManager": "bun@1.3.14",
+  "patchedDependencies": {
+    "mineflayer@4.39.0": "patches/mineflayer@4.39.0.patch",
+    "minecraft-protocol@1.68.0": "patches/minecraft-protocol@1.68.0.patch",
+    "prismarine-chunk@1.41.0": "patches/prismarine-chunk@1.41.0.patch",
+    "prismarine-physics@1.11.1": "patches/prismarine-physics@1.11.1.patch"
+  }
 }

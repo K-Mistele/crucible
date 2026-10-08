@@ -1,0 +1,27 @@
+diff --git a/src/index.js b/src/index.js
+index b4a2abe473808307d513c25b1ed59c842879ba91..ca4181cef1f6a838b2878e086a5ca2b5bbac5bf3 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -14,7 +14,8 @@ const chunkImplementations = {
+     1.19: require('./pc/1.18/chunk'),
+     '1.20': require('./pc/1.18/chunk'),
+     1.21: require('./pc/1.18/chunk'),
+-    26.1: require('./pc/1.18/chunk')
++    26.1: require('./pc/1.18/chunk'),
++    26.2: require('./pc/1.18/chunk')
+   },
+   bedrock: {
+     0.14: require('./bedrock/0.14/chunk'),
+diff --git a/src/pc/common/PaletteChunkSection.js b/src/pc/common/PaletteChunkSection.js
+index 26ef5d837b611f121e7597519dca716473a4d97e..10e035d869b38b76bc9c8f5fc3908ac9efb404d2 100644
+--- a/src/pc/common/PaletteChunkSection.js
++++ b/src/pc/common/PaletteChunkSection.js
+@@ -140,7 +140,7 @@ module.exports = Block => {
+         fluidCount = smartBuffer.readInt16BE()
+       }
+       const bitsPerBlock = smartBuffer.readUInt8()
+-      if (bitsPerBlock > 16) throw new Error(`Bits per block is too big: ${bitsPerBlock}`)
++      if (bitsPerBlock > Math.max(16, maxBitsPerBlock)) throw new Error(`Bits per block is too big: ${bitsPerBlock}`)
+       // Case 1: Single Value Container (all blocks in the section are the same)
+       if (bitsPerBlock === 0) {
+         const section = new ChunkSection({

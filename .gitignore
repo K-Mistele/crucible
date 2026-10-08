@@ -15,3 +15,6 @@ __pycache__/
 
 # Riptide artifacts (cloud-synced)
 .humanlayer/tasks/
+
+# Built prismarine-viewer bundle (apps/minecraft-bot/scripts/build-viewer.mjs)
+.viewer/

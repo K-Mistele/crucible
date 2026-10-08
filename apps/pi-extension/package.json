@@ -1,0 +1,34 @@
+{
+  "name": "@minecraft-cloud/pi-extension",
+  "private": true,
+  "type": "module",
+  "description": "Pi extension that plays Minecraft through a persistent Mineflayer bot",
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@minecraft-cloud/minecraft-bot": "workspace:*"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "1.1.0",
+    "@earendil-works/pi-coding-agent": "1.1.0",
+    "typebox": "1.3.36",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^22",
+    "typescript": "^5.8.3"
+  }
+}

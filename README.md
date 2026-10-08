@@ -7,6 +7,11 @@ writes a daily compressed backup to a private versioned S3 bucket.
 The repository is a Bun workspace with Vite+, Oxlint, and a small operator guide
 in `apps/control-center`.
 
+ChameleonBot, an AI player for the server, is a Pi extension in `apps/pi-extension`
+built on the Mineflayer library in `apps/minecraft-bot`. See
+`apps/pi-extension/README.md` for setup. It does not modify or deploy server
+infrastructure.
+
 ## Why AWS
 
 This starter intentionally chooses AWS EC2 rather than the cheapest possible
@@ -126,6 +131,7 @@ bun run dev
 bun run check
 bun run test
 bun run build
+bun run bot:test
 bun run test:migrate-uuids
 ```
 
