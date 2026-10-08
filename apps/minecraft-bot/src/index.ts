@@ -9,6 +9,6 @@ export {
   type MinecraftData,
   type RuntimeConfig,
 } from './runtime.ts';
-export { describeState, diffState, snapshot, type BotState } from './state.ts';
+export { clockTime, describeState, diffState, snapshot, timePhase, type BotState, type TimePhase } from './state.ts';
 export { startViewer, VIEWER_PUBLIC_DIR, type Viewer, type ViewerOptions } from './viewer.ts';
 export type { Bot } from 'mineflayer';

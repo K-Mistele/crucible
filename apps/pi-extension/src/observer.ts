@@ -43,10 +43,17 @@ export class Observer {
   private nextSeq = 1;
   private readonly runtime: ObservedRuntime;
   private readonly getCamera: () => Camera | undefined;
+  private readonly reminder: () => Promise<string | undefined>;
 
-  constructor(runtime: ObservedRuntime, getCamera: () => Camera | undefined) {
+  /** `reminder` returns an optional line appended to the next observation, e.g. to update notes. */
+  constructor(
+    runtime: ObservedRuntime,
+    getCamera: () => Camera | undefined,
+    reminder: () => Promise<string | undefined> = async () => undefined,
+  ) {
     this.runtime = runtime;
     this.getCamera = getCamera;
+    this.reminder = reminder;
   }
 
   /** Mark the pending observation delivered if it appears in the conversation. */
@@ -77,8 +84,10 @@ export class Observer {
     const events = this.runtime.events.since(this.delivered.cursor);
     const bot = this.runtime.bot;
     const state = bot ? snapshot(bot) : undefined;
+    const reminder = await this.reminder();
+    const text = this.describe(events, state, this.delivered.state);
     const content: (TextContent | ImageContent)[] = [
-      { type: 'text', text: this.describe(events, state, this.delivered.state) },
+      { type: 'text', text: reminder ? `${text}\n\n${reminder}` : text },
     ];
     const screenshot = await this.screenshot();
     if (screenshot) content.push(screenshot);

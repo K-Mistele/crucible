@@ -14,6 +14,7 @@ import {
   type Viewer,
 } from '@minecraft-cloud/minecraft-bot';
 import { Executor } from './executor.ts';
+import { notesReminder } from './notes.ts';
 import { registerLoop } from './loop.ts';
 import { Observer } from './observer.ts';
 import { minecraftPrompt } from './prompt.ts';
@@ -83,7 +84,7 @@ export default function minecraftExtension(pi: ExtensionAPI): void {
         const bot = runtime.bot;
         return bot && { bot, mcData: runtime.mcData, goals, Vec3 };
       }, join(agentDir, 'skills')),
-      observer: new Observer(runtime, () => current.camera),
+      observer: new Observer(runtime, () => current.camera, notesReminder(join(agentDir, 'notes'))),
       viewer: undefined,
       camera: undefined,
       paused: false,

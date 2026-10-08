@@ -11,6 +11,10 @@ export function fakeBot(overrides: { x?: number; food?: number; items?: { name: 
     experience: { level: 0 },
     heldItem: null,
     inventory: { items: () => overrides.items ?? [], slots: [] },
+    time: { timeOfDay: 3_000 },
+    isRaining: false,
+    thunderState: 0,
+    entities: {},
   } as unknown as Bot;
 }
 

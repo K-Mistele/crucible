@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
-import { describeState, diffState, type BotState } from '../src/state.ts';
+import { clockTime, describeState, diffState, timePhase, type BotState } from '../src/state.ts';
 
 const base: BotState = {
   position: { x: -47.5, y: 107, z: -41.5 },
@@ -10,6 +10,10 @@ const base: BotState = {
   heldItem: 'stone_axe',
   armor: { head: 'none', chest: 'none', legs: 'none', feet: 'none' },
   inventory: { oak_log: 12, stone_axe: 1 },
+  time: 'day',
+  clock: '09:00',
+  weather: 'clear',
+  hostiles: {},
 };
 
 describe('diffState', () => {
@@ -60,6 +64,41 @@ describe('describeState', () => {
       'Held item: stone_axe',
       'Armor: none',
       'Inventory: oak_log x12, stone_axe x1',
+      'Time: day (09:00)',
+      'Weather: clear',
+      'Hostile mobs within 16 blocks: none',
+    ]);
+  });
+});
+
+describe('time, weather and hostile mobs', () => {
+  test('reports a new day phase, weather and nearby hostile mobs', () => {
+    const next: BotState = {
+      ...base,
+      time: 'sunset',
+      clock: '18:00',
+      weather: 'rain',
+      hostiles: { zombie: 2, skeleton: 1 },
+    };
+    expect(diffState(base, next)).toEqual([
+      'Time: day → sunset (18:00)',
+      'Weather: clear → rain',
+      'Hostile mobs within 16 blocks: none → skeleton x1, zombie x2',
+    ]);
+  });
+
+  test('ignores the clock moving within the same phase', () => {
+    expect(diffState(base, { ...base, clock: '11:30' })).toEqual([]);
+  });
+
+  test('maps ticks to phases and clock times', () => {
+    expect([0, 11_999, 12_000, 13_000, 18_000, 23_000].map((tick) => [timePhase(tick), clockTime(tick)])).toEqual([
+      ['day', '06:00'],
+      ['day', '17:59'],
+      ['sunset', '18:00'],
+      ['night', '19:00'],
+      ['night', '00:00'],
+      ['sunrise', '05:00'],
     ]);
   });
 });

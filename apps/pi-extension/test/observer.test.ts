@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
+import { Observer } from '../src/observer.ts';
 import { delivered, fakeBot, fakeRuntime, observerFor } from './fakes.ts';
 
 const textOf = (content: unknown) =>
@@ -74,5 +75,14 @@ describe('Observer', () => {
     runtime.events.push('chat', 'Alex: hi');
     expect((await observer.peek()).text).toContain('Chat:\n- Alex: hi');
     expect(textOf((await observer.build()).draft.content)).toContain('Alex: hi');
+  });
+});
+
+describe('Observer reminders', () => {
+  test('appends a reminder to the observation text', async () => {
+    const runtime = fakeRuntime();
+    const observer = new Observer(runtime, () => undefined, async () => 'Reminder: update your notes.');
+    observer.confirm([delivered((await observer.build()).seq)]);
+    expect(textOf((await observer.build()).draft.content)).toBe('No changes.\n\nReminder: update your notes.');
   });
 });
