@@ -44,6 +44,8 @@ The footer shows `⛏ ChameleonBot connected · http://localhost:3007`; open tha
 | `MCBOT_VIEWER_PORT` | `3007` | Viewer port |
 | `MCBOT_AGENT_DIR` | `./minecraft-agent` | Its notes and saved skills |
 
+Each observation in Pi's transcript includes the screenshot the model saw. Pi only draws images in iTerm2, Ghostty, Kitty, WezTerm or Warp, and not inside tmux; elsewhere the screenshot shows as a placeholder line.
+
 Only run one copy per username: two bots with the same name keep kicking each other off.
 
 ## Checks

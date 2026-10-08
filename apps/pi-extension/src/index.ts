@@ -16,8 +16,9 @@ import {
 import { Executor } from './executor.ts';
 import { notesReminder } from './notes.ts';
 import { registerLoop } from './loop.ts';
-import { Observer } from './observer.ts';
+import { Observer, OBSERVATION_TYPE } from './observer.ts';
 import { minecraftPrompt } from './prompt.ts';
+import { renderObservation } from './render.ts';
 import { registerTools } from './tools.ts';
 
 const STATUS_KEY = 'minecraft';
@@ -49,6 +50,7 @@ export default function minecraftExtension(pi: ExtensionAPI): void {
   };
 
   registerTools(pi, () => session);
+  pi.registerMessageRenderer(OBSERVATION_TYPE, renderObservation);
   registerLoop(pi, {
     getSession: () => session,
     onChange: () => {
