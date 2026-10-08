@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type { MinecraftSettings } from './settings.ts';
 import { validateMinecraftSettings } from './settings.ts';
 
@@ -10,11 +12,23 @@ const asBoolean = (value: boolean): 'TRUE' | 'FALSE' => (value ? 'TRUE' : 'FALSE
 
 const quote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
+const offlineUuid = (name: string): string => {
+  const digest = createHash('md5').update(`OfflinePlayer:${name}`).digest();
+  digest[6] = (digest[6]! & 0x0f) | 0x30;
+  digest[8] = (digest[8]! & 0x3f) | 0x80;
+  const hex = digest.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
 export const createMinecraftUserData = ({
   backupBucketName,
   settings,
 }: MinecraftUserDataOptions): string => {
   validateMinecraftSettings(settings);
+
+  const offlineWhitelist = settings.onlineMode
+    ? ''
+    : JSON.stringify(settings.whitelist.map((name) => ({ name, uuid: offlineUuid(name) })));
 
   if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(backupBucketName)) {
     throw new Error('Backup bucket name is not a valid S3 bucket name.');
@@ -34,7 +48,8 @@ export const createMinecraftUserData = ({
     `MINECRAFT_PVP=${asBoolean(settings.pvp)}`,
     `MINECRAFT_ENFORCE_WHITELIST=${asBoolean(settings.whitelistEnabled)}`,
     `MINECRAFT_OPS=${quote(settings.ops.join(','))}`,
-    `MINECRAFT_WHITELIST=${quote(settings.whitelist.join(','))}`,
+    `MINECRAFT_WHITELIST=${quote(settings.onlineMode ? settings.whitelist.join(',') : '')}`,
+    `MINECRAFT_OFFLINE_WHITELIST_JSON=${quote(offlineWhitelist)}`,
     `MINECRAFT_BACKUP_BUCKET=${quote(backupBucketName)}`,
     ...(settings.seed !== undefined ? [`MINECRAFT_SEED=${quote(settings.seed)}`] : []),
   ].join('\n');
@@ -101,6 +116,11 @@ export const createMinecraftUserData = ({
     '#!/bin/bash',
     'set -Eeuo pipefail',
     'source /etc/minecraft/minecraft.env',
+    'if [[ -n "${MINECRAFT_OFFLINE_WHITELIST_JSON}" ]]; then',
+    '  printf "%s\\n" "${MINECRAFT_OFFLINE_WHITELIST_JSON}" > /srv/minecraft/whitelist.json',
+    '  chown 1000:1000 /srv/minecraft/whitelist.json',
+    '  chmod 0644 /srv/minecraft/whitelist.json',
+    'fi',
     '',
     'exec /usr/bin/docker run --name minecraft --rm --init --pull always --stop-timeout 120 \\',
     '  -p 25565:25565/tcp \\',

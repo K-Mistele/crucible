@@ -110,9 +110,8 @@ Important defaults:
 - Paper, Java 25 image, and pinned Minecraft `26.2`, the current Java Edition
   release when this configuration was updated. Every player should select Java
   Edition `26.2` in the launcher before joining.
-- `onlineMode` enabled; no RCON port exposed publicly. Set `whitelistEnabled`
-  in `apps/infra/src/settings.ts` to `true` if you later want to restrict
-  access to named players.
+- `onlineMode` disabled so the offline-auth bot can connect; the whitelist is
+  enabled for the known players and `TardBot`. No RCON port is exposed publicly.
 - TCP `25565` is the only allowed inbound port; Java Edition does not need UDP.
 - Daily backups at 04:17 UTC; adjust the systemd timer in
   `apps/infra/src/user-data.ts` if needed.
@@ -127,6 +126,7 @@ bun run dev
 bun run check
 bun run test
 bun run build
+bun run test:migrate-uuids
 ```
 
 `bun run dev` starts the Vite operator guide. `bun run infra:plan` and

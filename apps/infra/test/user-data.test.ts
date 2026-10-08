@@ -19,7 +19,11 @@ describe('createMinecraftUserData', () => {
     expect(userData).toContain('itzg/minecraft-server:java25');
     expect(userData).toContain('dnf -y install awscli docker openssl util-linux zstd');
     expect(userData).not.toContain('awscli2');
-    expect(userData).toContain('MINECRAFT_ENFORCE_WHITELIST=FALSE');
+    expect(userData).toContain('MINECRAFT_ONLINE_MODE=FALSE');
+    expect(userData).toContain('MINECRAFT_ENFORCE_WHITELIST=TRUE');
+    expect(userData).toContain("MINECRAFT_WHITELIST=''");
+    expect(userData).toContain('3935976a-e5d1-39a2-b494-902ff8a0ccda');
+    expect(userData).toContain('whitelist.json');
     expect(userData).toContain('ENFORCE_WHITELIST="${MINECRAFT_ENFORCE_WHITELIST}"');
     expect(userData).toContain('OnCalendar=*-*-* 04:17:00 UTC');
     expect(userData).toContain('minecraft-backups-123456789012-us-east-1');

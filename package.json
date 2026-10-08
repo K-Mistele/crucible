@@ -18,9 +18,12 @@
     "infra:prod:destroy": "bun --cwd apps/infra alchemy destroy src/alchemy.run.ts --stage prod",
     "infra:prod:plan": "bun --cwd apps/infra alchemy plan src/alchemy.run.ts --stage prod",
     "lint": "vp lint",
-    "test": "vp test"
+    "migrate-uuids": "python3 scripts/migrate-uuids.py",
+    "test": "vp test",
+    "test:migrate-uuids": "bun test scripts/migrate-uuids.test.ts"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "typescript": "^5.8.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
     "vite-plus": "0.2.9"

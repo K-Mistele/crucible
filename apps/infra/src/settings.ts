@@ -26,15 +26,15 @@ export const minecraftSettings: MinecraftSettings = {
   maxPlayers: 12,
   memory: '3G',
   motd: "Kyle's cloud Minecraft server",
-  onlineMode: true,
+  onlineMode: false,
   ops: [],
   pvp: true,
   seed: '-4995054936707021313',
   simulationDistance: 8,
   version: '26.2',
   viewDistance: 10,
-  whitelist: [],
-  whitelistEnabled: false,
+  whitelist: ['ChameleonOKarma', 'DEMON8672', 'Galactic_Gecko', 'TardBot', 'tunestay', 'TurboDos'],
+  whitelistEnabled: true,
 };
 
 export const validateMinecraftSettings = (settings: MinecraftSettings): void => {

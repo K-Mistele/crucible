@@ -7,6 +7,8 @@ node_modules/
 dist/
 .vite/
 .alchemy/
+__pycache__/
+*.pyc
 .env
 .env.*
 !.env.example
