@@ -14,6 +14,7 @@ const base: BotState = {
   clock: '09:00',
   weather: 'clear',
   hostiles: {},
+  effects: [],
 };
 
 describe('diffState', () => {
@@ -67,6 +68,7 @@ describe('describeState', () => {
       'Time: day (09:00)',
       'Weather: clear',
       'Hostile mobs within 16 blocks: none',
+      'Effects: none',
     ]);
   });
 });
@@ -79,11 +81,13 @@ describe('time, weather and hostile mobs', () => {
       clock: '18:00',
       weather: 'rain',
       hostiles: { zombie: 2, skeleton: 1 },
+      effects: ['poison II', 'regeneration'],
     };
     expect(diffState(base, next)).toEqual([
       'Time: day → sunset (18:00)',
       'Weather: clear → rain',
       'Hostile mobs within 16 blocks: none → skeleton x1, zombie x2',
+      'Effects: none → poison II, regeneration',
     ]);
   });
 

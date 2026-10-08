@@ -23,7 +23,7 @@ bun --cwd apps/minecraft-bot viewer:build
 cd apps/minecraft-bot && bunx playwright install chromium
 ```
 
-It renders with 26.1 textures, with a game-style HUD (hearts, armor, food, XP, hotbar, offhand, crosshair) drawn over it by `src/hud.ts`. Chests, beds, signs, banners and blocks new in 26.2 don't draw.
+It renders with 26.1 textures, with a game-style HUD (hearts, armor, food, XP, hotbar, offhand, status effects, held items, crosshair) drawn over it by `src/hud.ts`. Chests, beds, signs, banners and blocks new in 26.2 don't draw.
 
 ## Checks
 

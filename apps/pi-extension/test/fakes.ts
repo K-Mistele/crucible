@@ -4,7 +4,7 @@ import { Observer } from '../src/observer.ts';
 /** A bot with just the fields `snapshot()` reads. */
 export function fakeBot(overrides: { x?: number; food?: number; items?: { name: string; count: number }[] } = {}) {
   return {
-    entity: { position: { x: overrides.x ?? 0, y: 64, z: 0 } },
+    entity: { position: { x: overrides.x ?? 0, y: 64, z: 0 }, effects: {} },
     game: { dimension: 'overworld' },
     health: 20,
     food: overrides.food ?? 20,
@@ -15,6 +15,7 @@ export function fakeBot(overrides: { x?: number; food?: number; items?: { name: 
     isRaining: false,
     thunderState: 0,
     entities: {},
+    registry: { effects: {} },
   } as unknown as Bot;
 }
 

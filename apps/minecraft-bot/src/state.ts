@@ -16,6 +16,8 @@ export interface BotState {
   weather: 'clear' | 'rain' | 'thunder';
   /** Hostile mobs within HOSTILE_RANGE blocks, by name. */
   hostiles: Record<string, number>;
+  /** Active status effects, e.g. "poison II". */
+  effects: string[];
 }
 
 export type TimePhase = 'day' | 'sunset' | 'night' | 'sunrise';
@@ -40,6 +42,25 @@ export function timePhase(timeOfDay: number): TimePhase {
 export function clockTime(timeOfDay: number): string {
   const minutes = Math.floor((((timeOfDay + 6_000) % 24_000) / 1_000) * 60);
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** Game ID of a status effect, e.g. "mining_fatigue", from minecraft-data's name ("MiningFatigue"). */
+export function effectName(bot: Bot, id: number): string | undefined {
+  const name = (bot.registry.effects as Record<number, { name: string } | undefined>)[id]?.name;
+  if (!name) return undefined;
+  const snake = name.replace(/(?<!^)([A-Z])/g, '_$1').toLowerCase();
+  return snake === 'bad_luck' ? 'unluck' : snake;
+}
+
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+/** Effect level as the game shows it: "II" for amplifier 1. Level I is left out. */
+export const effectLevel = (amplifier: number) => (amplifier === 0 ? '' : (ROMAN[amplifier + 1] ?? String(amplifier + 1)));
+
+function activeEffects(bot: Bot): string[] {
+  // Typed as an array, but mineflayer keys it by effect ID.
+  return Object.values(bot.entity.effects ?? {})
+    .map((effect) => [effectName(bot, effect.id) ?? `effect ${effect.id}`, effectLevel(effect.amplifier)].filter(Boolean).join(' '))
+    .sort();
 }
 
 function nearbyHostiles(bot: Bot): Record<string, number> {
@@ -77,6 +98,7 @@ export function snapshot(bot: Bot): BotState {
     clock: clockTime(bot.time.timeOfDay),
     weather: bot.thunderState > 0 ? 'thunder' : bot.isRaining ? 'rain' : 'clear',
     hostiles: nearbyHostiles(bot),
+    effects: activeEffects(bot),
   };
 }
 
@@ -87,6 +109,8 @@ const formatInventory = (inventory: BotState['inventory']) => {
   const entries = Object.entries(inventory).sort(([a], [b]) => a.localeCompare(b));
   return entries.length === 0 ? 'empty' : entries.map(([name, count]) => `${name} x${count}`).join(', ');
 };
+
+const formatEffects = (effects: string[]) => (effects.length === 0 ? 'none' : effects.join(', '));
 
 const formatHostiles = (hostiles: BotState['hostiles']) => {
   const entries = Object.entries(hostiles).sort(([a], [b]) => a.localeCompare(b));
@@ -109,6 +133,7 @@ export function describeState(state: BotState): string[] {
     `Time: ${state.time} (${state.clock})`,
     `Weather: ${state.weather}`,
     `Hostile mobs within ${HOSTILE_RANGE} blocks: ${formatHostiles(state.hostiles)}`,
+    `Effects: ${formatEffects(state.effects)}`,
   ];
 }
 
@@ -149,5 +174,7 @@ export function diffState(previous: BotState, next: BotState): string[] {
   if (hostiles !== formatHostiles(previous.hostiles)) {
     lines.push(`Hostile mobs within ${HOSTILE_RANGE} blocks: ${formatHostiles(previous.hostiles)} → ${hostiles}`);
   }
+  const effects = formatEffects(next.effects);
+  if (effects !== formatEffects(previous.effects)) lines.push(`Effects: ${formatEffects(previous.effects)} → ${effects}`);
   return lines;
 }

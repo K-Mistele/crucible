@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import type { Bot } from 'mineflayer';
 import { WorldView } from 'prismarine-viewer/viewer/lib/worldView.js';
 import { Server, type Socket } from 'socket.io';
-import { HUD_SCRIPT, hudState, itemIcons } from './hud.ts';
+import { HUD_SCRIPT, hudIcons, hudState } from './hud.ts';
 
 /** Browser bundle built by `scripts/build-viewer.mjs`. */
 export const VIEWER_PUBLIC_DIR = join(dirname(dirname(fileURLToPath(import.meta.url))), '.viewer', 'public');
@@ -63,9 +63,9 @@ export async function startViewer(initialBot: Bot, options: ViewerOptions = {}):
   app.get('/session', (_request, response) => {
     response.type('text').send(String(session));
   });
-  const icon = itemIcons(VIEWER_PUBLIC_DIR);
+  const icons = hudIcons(VIEWER_PUBLIC_DIR);
   app.get('/hud', (_request, response) => {
-    response.json(hudState(bot, icon));
+    response.json(hudState(bot, icons));
   });
   app.use(express.static(VIEWER_PUBLIC_DIR));
   const http = createServer(app);

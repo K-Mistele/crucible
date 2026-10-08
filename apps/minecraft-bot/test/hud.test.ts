@@ -51,17 +51,40 @@ describe('hudState', () => {
       experience: { level: 12, progress: 0.5 },
       quickBarSlot: 0,
       inventory: { slots },
+      on: () => {},
+      registry: { effects: { 18: { name: 'Poison' }, 25: { name: 'BadLuck' } } },
       entity: {
+        effects: { 18: { id: 18, amplifier: 1, duration: 600 }, 25: { id: 25, amplifier: 0, duration: -1 } },
         attributes: {
           'generic.armor': { value: 0, modifiers: [{ amount: 6, operation: 0 }, { amount: 2, operation: 0 }] },
           'generic.armor_toughness': { value: 0, modifiers: [] },
         },
       },
     } as unknown as Bot;
-    const hud = hudState(bot, (name) => (name === 'potato' ? 'potato.png' : undefined));
+    const hud = hudState(
+      bot,
+      { item: (name) => (name === 'potato' ? 'potato.png' : undefined), effect: (name) => `${name}.png` },
+      1_000,
+    );
     expect(hud).toMatchObject({ health: 15, food: 17, armor: 8, xpLevel: 12, xpProgress: 0.5, selected: 0 });
     expect(hud.hotbar[0]).toEqual({ name: 'potato', count: 37, icon: 'potato.png' });
     expect(hud.hotbar.slice(1)).toEqual(Array(8).fill(null));
     expect(hud.offhand).toEqual({ name: 'shield', count: 1, icon: undefined });
+    expect(hud.effects).toEqual([
+      { name: 'poison', level: 'II', secondsLeft: 30, icon: 'poison.png' },
+      { name: 'unluck', level: '', secondsLeft: null, icon: 'unluck.png' },
+    ]);
+  });
+
+  test('counts effect time down from when it was first seen', () => {
+    const bot = {
+      health: 20, food: 20, experience: { level: 0, progress: 0 }, quickBarSlot: 0,
+      inventory: { slots: [] }, on: () => {},
+      registry: { effects: { 1: { name: 'Speed' } } },
+      entity: { effects: { 1: { id: 1, amplifier: 0, duration: 200 } }, attributes: {} },
+    } as unknown as Bot;
+    const icons = { item: () => undefined, effect: () => undefined };
+    expect(hudState(bot, icons, 0).effects[0]?.secondsLeft).toBe(10);
+    expect(hudState(bot, icons, 4_000).effects[0]?.secondsLeft).toBe(6);
   });
 });

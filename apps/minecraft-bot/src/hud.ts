@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Bot } from 'mineflayer';
+import { effectLevel, effectName } from './state.ts';
 
 /** Texture version the viewer bundle is built with (see scripts/build-viewer.mjs). */
 const TEXTURE_VERSION = '26.1';
@@ -27,6 +28,29 @@ export interface HudState {
   hotbar: (HudItem | null)[];
   selected: number;
   offhand: HudItem | null;
+  effects: HudEffect[];
+}
+
+export interface HudEffect {
+  name: string;
+  /** "II" for amplifier 1; empty for level I. */
+  level: string;
+  /** Seconds left, or null for an infinite effect. */
+  secondsLeft: number | null;
+  icon: string | undefined;
+}
+
+export interface HudIcons {
+  item(name: string): string | undefined;
+  effect(name: string): string | undefined;
+}
+
+/** Looks up item and status effect icons in the viewer bundle's textures. */
+export function hudIcons(publicDir: string): HudIcons {
+  const texturesDir = join(publicDir, 'textures', TEXTURE_VERSION);
+  const effect = (name: string) =>
+    existsSync(join(texturesDir, 'mob_effect', `${name}.png`)) ? `textures/${TEXTURE_VERSION}/mob_effect/${name}.png` : undefined;
+  return { item: itemIcons(publicDir), effect };
 }
 
 /** Looks up item icons in the viewer bundle's textures. */
@@ -60,12 +84,41 @@ export function itemIcons(publicDir: string): (name: string) => string | undefin
   };
 }
 
-/** What the vanilla HUD shows: health, food, armor, XP and the hotbar. */
-export function hudState(bot: Bot, icon: (name: string) => string | undefined): HudState {
+/** When each of the bot's effects was last applied, to count down its duration. */
+const effectStarts = new WeakMap<Bot, Map<number, number>>();
+
+function effectStartTimes(bot: Bot): Map<number, number> {
+  let starts = effectStarts.get(bot);
+  if (!starts) {
+    const created = new Map<number, number>();
+    bot.on('entityEffect', (entity, effect) => {
+      if (entity === bot.entity) created.set(effect.id, Date.now());
+    });
+    effectStarts.set(bot, created);
+    starts = created;
+  }
+  return starts;
+}
+
+/** What the vanilla HUD shows: health, food, armor, XP, the hotbar, offhand and status effects. */
+export function hudState(bot: Bot, icons: HudIcons, now = Date.now()): HudState {
   const item = (slot: number): HudItem | null => {
     const stack = bot.inventory.slots[slot];
-    return stack ? { name: stack.name, count: stack.count, icon: icon(stack.name) } : null;
+    return stack ? { name: stack.name, count: stack.count, icon: icons.item(stack.name) } : null;
   };
+  const starts = effectStartTimes(bot);
+  // Typed as an array, but mineflayer keys it by effect ID.
+  const effects = Object.values(bot.entity.effects ?? {}).map((effect): HudEffect => {
+    const name = effectName(bot, effect.id) ?? `effect_${effect.id}`;
+    if (!starts.has(effect.id)) starts.set(effect.id, now); // applied before the HUD first looked
+    const elapsed = (now - (starts.get(effect.id) ?? now)) / 1000;
+    return {
+      name,
+      level: effectLevel(effect.amplifier),
+      secondsLeft: effect.duration < 0 ? null : Math.max(0, Math.round(effect.duration / 20 - elapsed)),
+      icon: icons.effect(name),
+    };
+  });
   return {
     health: Math.max(0, Math.round(bot.health)),
     food: Math.max(0, Math.round(bot.food)),
@@ -75,6 +128,7 @@ export function hudState(bot: Bot, icon: (name: string) => string | undefined): 
     hotbar: Array.from({ length: 9 }, (_, index) => item(HOTBAR_FIRST_SLOT + index)),
     selected: bot.quickBarSlot,
     offhand: item(OFFHAND_SLOT),
+    effects,
   };
 }
 
@@ -126,12 +180,50 @@ export const HUD_SCRIPT = `<style>
     }
     return html;
   };
+  // First-person hands, drawn flat: the held item at bottom right, the offhand item at bottom
+  // left, and the bare arm from the default skin when the main hand is empty.
+  const HAND = 84;
+  const hands = (hud, width, height) => {
+    let html = '';
+    const main = hud.hotbar[hud.selected];
+    if (main && main.icon) {
+      html += img(main.icon, width - HAND - width * 0.12, height - HAND + 8, HAND, HAND, 'transform:scaleX(-1) rotate(-12deg)');
+    } else if (!main) {
+      // Right arm, front face: 4x12 pixels at (44, 20) in the 64x64 skin, shoulder at the top.
+      // Turned so the hand points up and in, from the bottom-right corner.
+      const k = 9;
+      html += '<div style="left:' + px(width - 4 * k - width * 0.13) + ';top:' + px(height - 12 * k + 40) + ';width:' + px(4 * k) +
+        ';height:' + px(12 * k) + ';background:url(textures/1.16.4/entity/steve.png) ' + px(-44 * k) + ' ' + px(-20 * k) + '/' +
+        px(64 * k) + ' ' + px(64 * k) + ';transform:rotate(152deg)"></div>';
+    }
+    if (hud.offhand && hud.offhand.icon) {
+      html += img(hud.offhand.icon, width * 0.12, height - HAND + 8, HAND, HAND, 'transform:rotate(-12deg)');
+    }
+    return html;
+  };
+  // Status effects in the top right, as in the game, with the time left underneath.
+  const effects = (list, width) => {
+    let html = '';
+    list.forEach((effect, index) => {
+      const x = width - 25 * (index + 1);
+      html += img(SPRITES + 'effect_background.png', x, 1, 24, 24);
+      if (effect.icon) html += img(effect.icon, x + 3, 4, 18, 18);
+      if (effect.level) {
+        html += '<div class="count" style="left:' + px(x) + ';top:' + px(14) + ';width:' + px(23) + ';text-align:right;font-size:12px">' + effect.level + '</div>';
+      }
+      const time = effect.secondsLeft === null ? '∞' : Math.floor(effect.secondsLeft / 60) + ':' + String(effect.secondsLeft % 60).padStart(2, '0');
+      html += '<div class="count" style="left:' + px(x - 2) + ';top:' + px(26) + ';width:' + px(28) + ';text-align:center;font-size:12px">' + time + '</div>';
+    });
+    return html;
+  };
   const draw = (hud) => {
     const width = innerWidth / S;
     const height = innerHeight / S;
     const left = Math.floor(width / 2 - 91);
     const top = height - 22;
-    let html = img(SPRITES + 'crosshair.png', width / 2 - 7.5, height / 2 - 7.5, 15, 15);
+    let html = hands(hud, width, height);
+    html += effects(hud.effects, width);
+    html += img(SPRITES + 'crosshair.png', width / 2 - 7.5, height / 2 - 7.5, 15, 15);
     html += img(SPRITES + 'hotbar.png', left, top, 182, 22);
     html += img(SPRITES + 'hotbar_selection.png', left - 1 + hud.selected * 20, top - 1, 24, 23);
     hud.hotbar.forEach((stack, index) => (html += item(stack, left + 3 + index * 20, top + 3)));
