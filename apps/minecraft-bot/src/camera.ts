@@ -18,7 +18,7 @@ export interface Camera {
 
 const SETTLE_POLL_MS = 250;
 
-/** Keeps a headless Chromium page open on the viewer and screenshots its canvas on demand. */
+/** Keeps a headless Chromium page open on the viewer and screenshots it on demand. */
 export async function openCamera(url: string, options: CameraOptions = {}): Promise<Camera> {
   const { width = 1280, height = 720, settleMs = 1500 } = options;
   const browser: Browser = await chromium.launch({
@@ -34,7 +34,8 @@ export async function openCamera(url: string, options: CameraOptions = {}): Prom
   };
   await load();
 
-  const shoot = () => page.locator('canvas').screenshot({ type: 'png' });
+  // The whole page, so the HUD drawn over the canvas is included.
+  const shoot = () => page.screenshot({ type: 'png' });
   const hash = (buffer: Buffer) => createHash('sha1').update(buffer).digest('hex');
 
   return {

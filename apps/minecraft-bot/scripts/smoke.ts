@@ -9,7 +9,7 @@ const bot = await runtime.start();
 console.log(`spawned as ${bot.username}, version ${bot.version}, protocol ${bot.protocolVersion}`);
 console.log(describeState(snapshot(bot)).join('\n'));
 
-const viewer = await startViewer(bot);
+const viewer = await startViewer(bot, { port: Number(process.env.MCBOT_VIEWER_PORT ?? 3007) });
 console.log(`viewer at ${viewer.url}`);
 const camera = await openCamera(viewer.url);
 await new Promise((resolve) => setTimeout(resolve, 3000));

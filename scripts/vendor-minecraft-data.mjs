@@ -54,6 +54,7 @@ for (const file of FILES_26_2) {
   writeFileSync(join(dataDir, 'pc', '26.2', `${file}.json`), await download(url));
 }
 writeFileSync(join(dataDir, 'pc', 'common', 'versions.json'), await download(VERSIONS));
+fixAttributeIds(join(dataDir, 'pc', '26.2'));
 
 // 3. data.js with only the kept versions. 26.2 starts from 26.1 and switches the files it changes.
 const dataJs = readFileSync(join(source, 'data.js'), 'utf8');
@@ -99,3 +100,26 @@ manifest.description = `${manifest.description} (vendored: Java ${[...KEEP_VERSI
 writeFileSync(join(out, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 rmSync(work, { recursive: true, force: true });
 console.log(`Wrote ${out}`);
+
+/**
+ * The PR's protocol.json numbers entity attributes with an older, 31-entry list, but 26.2 has 40
+ * (air_drag_modifier comes first, so every ID is off by at least one and armor reads as
+ * armor_toughness). Rebuild the mapping from attributes.json, which is in the 26.2 registry order,
+ * keeping the names mineflayer already uses (e.g. "generic.armor") for attributes it knew.
+ */
+function fixAttributeIds(versionDir) {
+  const protocolPath = join(versionDir, 'protocol.json');
+  const protocol = JSON.parse(readFileSync(protocolPath, 'utf8'));
+  const attributes = JSON.parse(readFileSync(join(versionDir, 'attributes.json'), 'utf8'));
+  const packet = protocol.play.toClient.types.packet_entity_update_attributes;
+  const key = packet[1][1].type[1].type[1][0].type[1];
+  if (key.type !== 'varint' || !key.mappings) throw new Error('attribute key mapper not found in protocol.json');
+  const legacy = new Map(Object.values(key.mappings).map((name) => [name.replace(/^(generic|player|zombie)\./, ''), name]));
+  key.mappings = Object.fromEntries(
+    attributes.map(({ resource }, id) => {
+      const name = resource.replace(/^minecraft:/, '');
+      return [String(id), legacy.get(name) ?? name];
+    }),
+  );
+  writeFileSync(protocolPath, JSON.stringify(protocol, null, 2));
+}

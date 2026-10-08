@@ -26,3 +26,15 @@ describe('Minecraft 26.2 support', () => {
     bot.end();
   });
 });
+
+describe('26.2 entity attributes', () => {
+  test('attribute IDs follow the 26.2 registry', () => {
+    const data = minecraftData('26.2');
+    const packet = (data.protocol as any).play.toClient.types.packet_entity_update_attributes;
+    const mappings = packet[1][1].type[1].type[1][0].type[1].mappings as Record<string, string>;
+    expect(Object.keys(mappings)).toHaveLength(40);
+    expect(mappings['0']).toBe('air_drag_modifier');
+    expect(mappings['1']).toBe('generic.armor');
+    expect(mappings['26']).toBe('generic.movement_speed');
+  });
+});
